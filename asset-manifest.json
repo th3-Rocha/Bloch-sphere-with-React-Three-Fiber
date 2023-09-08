@@ -1,16 +1,13 @@
 {
   "files": {
-    "main.css": "/Bloch-sphere-with-React-Three-Fiber/static/css/main.073c9b0a.css",
-    "main.js": "/Bloch-sphere-with-React-Three-Fiber/static/js/main.1851b5d3.js",
-    "static/js/787.c12fa51c.chunk.js": "/Bloch-sphere-with-React-Three-Fiber/static/js/787.c12fa51c.chunk.js",
-    "static/media/logo.svg": "/Bloch-sphere-with-React-Three-Fiber/static/media/logo.6ce24c58023cc2f8fd88fe9d219db6c6.svg",
+    "main.css": "/Bloch-sphere-with-React-Three-Fiber/static/css/main.1d38bf31.css",
+    "main.js": "/Bloch-sphere-with-React-Three-Fiber/static/js/main.ca413d9d.js",
     "index.html": "/Bloch-sphere-with-React-Three-Fiber/index.html",
-    "main.073c9b0a.css.map": "/Bloch-sphere-with-React-Three-Fiber/static/css/main.073c9b0a.css.map",
-    "main.1851b5d3.js.map": "/Bloch-sphere-with-React-Three-Fiber/static/js/main.1851b5d3.js.map",
-    "787.c12fa51c.chunk.js.map": "/Bloch-sphere-with-React-Three-Fiber/static/js/787.c12fa51c.chunk.js.map"
+    "main.1d38bf31.css.map": "/Bloch-sphere-with-React-Three-Fiber/static/css/main.1d38bf31.css.map",
+    "main.ca413d9d.js.map": "/Bloch-sphere-with-React-Three-Fiber/static/js/main.ca413d9d.js.map"
   },
   "entrypoints": [
-    "static/css/main.073c9b0a.css",
-    "static/js/main.1851b5d3.js"
+    "static/css/main.1d38bf31.css",
+    "static/js/main.ca413d9d.js"
   ]
 }
