@@ -6,21 +6,27 @@ import * as THREE from 'three';
 import { useThree } from '@react-three/fiber';
 import React from 'react'; 
 import robotoJson from './Roboto_Regular.json';
-import katex from 'katex';
 
 const OutBox = styled.div`
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: space-around;
   align-items: center;
   background-color: #000;
   color: #e5e5e5;
   overflow: hidden;
-
+  height: 16vh;
+  
+  h1{
+    margin: 0;
+  }
   div {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
     width: 100vw;
-    min-height: 16vh;
-    
+    gap: 1rem;
+    font-size: smaller;
     box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
     text-align: center;
   }
@@ -208,12 +214,12 @@ function BlochSphere(props) {
             color="grey"
             wireframe
             transparent = {true}
-            opacity={0.3} 
+            opacity={0.2} 
           />
       </mesh>
-      <AxisArrow axis="Z" color = "blue" rotZ={2} rotX={1} rotY={0} position={[0, 2.5, 0]} />
-      <AxisArrow axis="X" color = "red" rotZ={3} rotX={0} rotY={0} position={[0, 0, 2.5]} />
-      <AxisArrow axis="Y" color = "green" rotZ={3} rotX={0} rotY={1} position={[2.5, 0, 0]} />
+      <AxisArrow axis="z" color = "blue" rotZ={2} rotX={1} rotY={0} position={[0, 2.5, 0]} />
+      <AxisArrow axis="x" color = "red" rotZ={3} rotX={0} rotY={0} position={[0, 0, 2.5]} />
+      <AxisArrow axis="y" color = "green" rotZ={3} rotX={0} rotY={1} position={[2.5, 0, 0]} />
       
       
     </group>
@@ -226,7 +232,8 @@ function BlochSphere(props) {
 export default function App() {
 
   const [polarAngles, setPolarAngles] = useState({ theta: 0, phi: 0 });
-  const mathExpression = '|\\psi\\rangle = \\cos\\left(\\frac{\\theta}{2}\\right)|0\\rangle + e^{i\\phi}\\sin\\left(\\frac{\\theta}{2}\\right)|1\\rangle';
+
+  var Latex = require('react-latex');
 
 
   const handleThetaChange = (event) => {
@@ -236,6 +243,16 @@ export default function App() {
   const handlePhiChange = (event) => {
     setPolarAngles({ ...polarAngles, phi: parseFloat(event.target.value) });
   };
+
+  let realT = ((polarAngles.theta * Math.PI) / 10)
+  let realP = ((polarAngles.phi * Math.PI) / 12)
+
+
+
+  let waveFunction = `$$|\\psi\\rangle = \\cos\\left(\\frac{${ realT.toFixed(3) == 0 ? "θ" : realT.toFixed(3) }}{2}\\right)|0\\rangle + e^{i${ realP.toFixed(3) == 0 ? "φ" : realP.toFixed(3) }}\\sin\\left(\\frac{${realT.toFixed(3) == 0 ? "θ" : realT.toFixed(3) }}{2}\\right)|1\\rangle \\Rightarrow $$`;
+  let waveFunction2 = `$$|\\psi\\rangle ${ Math.cos((realT)/2).toFixed(6) == 0 ? "=" : Math.cos((realT)/2).toFixed(6) == 1 ? "=" : "\\cong"}  ${ Math.cos((realT)/2).toFixed(6) == 0 ? "" : Math.cos((realT)/2).toFixed(6) == 1 ? "" : (Math.cos((realT)/2)).toFixed(3)   } 
+  ${Math.cos((realT)/2).toFixed(6) == 0 ? "" : "|0 \\rangle"} ${Math.cos((realT)/2).toFixed(6) == 1 ? "" : Math.cos((realT)/2).toFixed(6) == 0 ? "" : "+"} ${(Math.sin((realT)/2)).toFixed(3) == 0 ? "" :(Math.sin((realT)/2)).toFixed(3) == 1 ? "" : (Math.sin((realT)/2)).toFixed(3)} 
+  ${(Math.sin(((realT))/2)).toFixed(3) == 0 ? "" : "|1\\rangle"}  $$`;
 
   return (
     <div>
@@ -264,12 +281,12 @@ export default function App() {
           type="range"
           min="0"
           max="10"
-          step="0.5" // Adjust the step value as needed
+          step="1" // Adjust the step value as needed
           value={polarAngles.theta}
           onChange={handleThetaChange}
         />
         <span>
-        {polarAngles.theta}π/10 = {((polarAngles.theta * Math.PI) / 10).toFixed(3)}
+        {polarAngles.theta}π/10 = {realT}
         </span>
         
       </label>
@@ -279,26 +296,27 @@ export default function App() {
           type="range"
           min="0"
           max="24"
-          step="0.5" // Adjust the step value as needed
+          step="1" // Adjust the step value as needed
           value={polarAngles.phi}
           onChange={handlePhiChange}
         />
         <span>
-        {polarAngles.phi}π/10 = {((polarAngles.phi * Math.PI) / 10).toFixed(3)}
+        {polarAngles.phi}π/12 = {realP}
         </span>
          
       </label>
     </div>
    </Container>
       <OutBox>
+      <h1>Quantum State</h1>
         <div>
-          <h1>Wave Function</h1>
-          <div dangerouslySetInnerHTML={{ __html: katex.renderToString(mathExpression) }} />
+          <Latex displayMode={true}>{waveFunction }</Latex>
+          <Latex displayMode={true}>{waveFunction2}</Latex>
           
-            
         </div>
       </OutBox>
     </div>
   
   )
 }
+
