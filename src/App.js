@@ -5,7 +5,46 @@ import styled from 'styled-components';
 import * as THREE from 'three';
 import { useThree } from '@react-three/fiber';
 import React from 'react'; 
-import robotoJson from './Roboto_Regular.json';
+import * as math from 'mathjs';
+
+
+const GatesDiv = styled.span`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 1rem;
+`;
+
+const SettingsDiv = styled.div`
+ display: flex;
+ flex-direction: column;
+ gap: 1rem;
+ div{
+  display: flex;
+  flex-direction: column;
+
+ }
+`;
+
+const StyledButtonGate = styled.button`
+  background: linear-gradient(to bottom, #0075ff, #0075ff);  
+  border: none;
+  border-radius: 6px;
+  padding: 10px 10px;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0px 2px 2px rgba(0,0,0,0.2);
+
+  &:hover {
+    background: #4282d3;
+  }
+
+  &:active {
+    transform: translateY(2px);
+    box-shadow: 0px 1px 1px rgba(0,0,0,0.1);
+  }
+`;
 
 const OutBox = styled.div`
   display: flex;
@@ -40,13 +79,14 @@ const Container = styled.div`
   align-items: center;
   background-color: #f0f0f0; /* Set your desired background color */
   overflow: hidden;
-
+  
   Canvas {
     min-height: 99vh;
   }
 
   div {
     width: 20vw;
+    display: flex;
     background-color: #fff; /* Set the background color for the div */
     border-radius: 8px;
     box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2); /* Add a subtle box shadow */
@@ -65,6 +105,7 @@ const Container = styled.div`
 
       input[type="range"] {
         width: 100%;
+        cursor: pointer;
       }
 
       span {
@@ -79,7 +120,9 @@ const Container = styled.div`
 function BillboardText({ text, position }){
   const textRef = useRef();
 
+
   useFrame(({ camera }) => {
+    
     // Calculate the direction vector from the camera to the text
     const lookAtVector = camera.position.clone().sub(textRef.current.position);
 
@@ -90,7 +133,7 @@ function BillboardText({ text, position }){
   });
 
   return (
-    <Text  font={robotoJson} ref={textRef} position={position} fontSize={0.4} color="white">
+    <Text    ref={textRef} position={position} fontSize={0.4} color="white">
       {text}
     </Text>
   );
@@ -117,7 +160,7 @@ function AxisArrow({ rotZ,rotX,rotY,position, color,axis }) {
           <cylinderGeometry args={[0.15,0,0.6]} />
           <meshBasicMaterial color={hovered ? 'white' : color } transparent = {true} opacity={0.3}  />
         </mesh>
-          <Text font={robotoJson}
+          <Text 
             anchorX="center"
             anchorY="middle"
             fontSize = "0.4"
@@ -135,11 +178,14 @@ function AxisArrow({ rotZ,rotX,rotY,position, color,axis }) {
 }
 
 
-function LineBetweenPoints({ Theta, Phi }) {
+function LineBetweenPoints({ radiansTheta, radiansPhi }) {
   const point1 = useRef();
   const point2 = useRef();
-  let realTheta = (Theta * Math.PI) / 10;
-  let realPhi = (Phi * Math.PI) / 12;
+
+  //let realTheta = (Theta * Math.PI) / 10;
+  //let realPhi = (Phi * Math.PI) / 12;
+
+
   const { scene } = useThree();
 
   // Declare linePosition here so it's accessible in the entire component
@@ -157,9 +203,9 @@ function LineBetweenPoints({ Theta, Phi }) {
 
     // Calculate the new position for the line based on Theta and Phi angles
     const radius = 5; // Adjust the radius as needed
-    const x = radius * Math.sin(realTheta) * Math.cos(realPhi);
-    const y = radius * Math.sin(realTheta) * Math.sin(realPhi);
-    const z = radius * Math.cos(realTheta);
+    const x = radius * Math.sin(radiansTheta) * Math.cos(radiansPhi);
+    const y = radius * Math.sin(radiansTheta) * Math.sin(radiansPhi);
+    const z = radius * Math.cos(radiansTheta);
 
     linePosition.set(y, z, x);
 
@@ -177,7 +223,7 @@ function LineBetweenPoints({ Theta, Phi }) {
     point2.current.position.copy(linePosition);
   }
     scene.add(line);
-  }, [Theta, Phi, scene, point1, linePosition]);
+  }, [radiansTheta, radiansPhi, scene, point1, linePosition]);
 
   // Use useFrame to continuously update the sphere's position
   useFrame(() => {
@@ -194,14 +240,26 @@ function LineBetweenPoints({ Theta, Phi }) {
         <BillboardText text="|Ѱ>" position={linePosition} camera />
         <meshBasicMaterial color="yellow" />
       </mesh>
+      
     </group>
   );
 }
 
 
+function CameraSettings() {
+  const { camera } = useThree();
+  camera.position.set(8, 8, 8); 
+  camera.lookAt(0,0,0);
+  return (
+      <group>
+
+      </group>
+  );
+}
 
 
 function BlochSphere(props) {
+  
   const ref = useRef();
   return (
     <group>
@@ -230,82 +288,181 @@ function BlochSphere(props) {
 
 
 export default function App() {
+  const [isButtonPressed, setIsButtonPressed] = useState(true);
+  const [areOrbitControlsEnabled, setOrbitControlsEnabled] = useState(false);
+  const [isGateMode, setGateMode] = useState(false);
 
-  const [polarAngles, setPolarAngles] = useState({ theta: 0, phi: 0 });
+  useEffect(() => {
+    setTimeout(() => {
+      setIsButtonPressed(false);
+    }, 1);
+    setTimeout(() => {
+      setOrbitControlsEnabled(true);
+    }, 1000);
+  }, []);
+
+  const handleKeyPress = (event) => {
+    if (event.key === 'r') {
+      setIsButtonPressed((prevState) => !prevState);
+      setOrbitControlsEnabled(false);
+      setTimeout(() => {
+        setOrbitControlsEnabled(true);
+      }, 10);
+    }
+  };
+
+ 
+
+  React.useEffect(() => {
+    window.addEventListener('keydown', handleKeyPress);
+    return () => {
+      window.removeEventListener('keydown', handleKeyPress);
+    };
+  }, []);
+  
+  const [mathPINum, setMathPINum] = useState({ theta: 0, phi: 0 });
 
   var Latex = require('react-latex');
 
 
   const handleThetaChange = (event) => {
-    setPolarAngles({ ...polarAngles, theta: parseFloat(event.target.value) });
+    setMathPINum({ ...mathPINum, theta: parseFloat(event.target.value) });
+    setGateMode(false);
   };
 
   const handlePhiChange = (event) => {
-    setPolarAngles({ ...polarAngles, phi: parseFloat(event.target.value) });
+    setMathPINum({ ...mathPINum, phi: parseFloat(event.target.value) });
+    setGateMode(false);
   };
 
-  let realT = ((polarAngles.theta * Math.PI) / 10)
-  let realP = ((polarAngles.phi * Math.PI) / 12)
+  
+  //Gates//
+  const [isGateH, setIsGateH] = useState(false);
+  //Gates//
 
+let radiansTheta = 0;
+let radiansPhi = 0;
 
+let realT = (mathPINum.theta * Math.PI) / 10; // theta in radians
+let realP = (mathPINum.phi * Math.PI) / 12; // phi in radians
 
-  let waveFunction = `$$|\\psi\\rangle = \\cos\\left(\\frac{${ realT.toFixed(3) == 0 ? "θ" : realT.toFixed(3) }}{2}\\right)|0\\rangle + e^{i${ realP.toFixed(3) == 0 ? "φ" : realP.toFixed(3) }}\\sin\\left(\\frac{${realT.toFixed(3) == 0 ? "θ" : realT.toFixed(3) }}{2}\\right)|1\\rangle \\Rightarrow $$`;
+const theta = realT; 
+const phi = realP;
+
+const stateVector = [
+  Math.cos(theta/2),
+  math.complex(0, Math.sin(theta/2) * phi)
+];
+
+if (isGateMode) {
+  if (isGateH) {
+    radiansTheta = 0;
+    radiansPhi = 0;
+  }
+} else {
+  radiansTheta = realT;
+  radiansPhi = realP;
+}
+ 
+
+  const [thetaSlerp, setThetaSlerp] = useState(0);
+  const [phiSlerp, setPhiSlerp] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setThetaSlerp(prev => prev + (radiansTheta - prev) * 0.02);  
+      setPhiSlerp(prev => prev + (radiansPhi - prev) * 0.02); 
+    }, 5);
+    return () => clearInterval(interval);
+  }, [radiansTheta, radiansPhi]);
+ 
+  let waveFunction = `$$|\\psi\\rangle = \\cos\\left(\\frac{${ realT.toFixed(3) == 0 ? "θ" : (realT*(180/Math.PI)).toFixed(0) +"°"}}{2}\\right)|0\\rangle + e^{i${ realP.toFixed(3) == 0 ? "φ" : (realP*(180/Math.PI)).toFixed(0) +"°" }}\\sin\\left(\\frac{${realT.toFixed(3) == 0 ? "θ" : (realT*(180/Math.PI)).toFixed(0) + "°" }}{2}\\right)|1\\rangle \\Rightarrow $$`;
+
   let waveFunction2 = `$$|\\psi\\rangle ${ Math.cos((realT)/2).toFixed(6) == 0 ? "=" : Math.cos((realT)/2).toFixed(6) == 1 ? "=" : "\\cong"}  ${ Math.cos((realT)/2).toFixed(6) == 0 ? "" : Math.cos((realT)/2).toFixed(6) == 1 ? "" : (Math.cos((realT)/2)).toFixed(3)   } 
   ${Math.cos((realT)/2).toFixed(6) == 0 ? "" : "|0 \\rangle"} ${Math.cos((realT)/2).toFixed(6) == 1 ? "" : Math.cos((realT)/2).toFixed(6) == 0 ? "" : "+"} ${(Math.sin((realT)/2)).toFixed(3) == 0 ? "" :(Math.sin((realT)/2)).toFixed(3) == 1 ? "" : (Math.sin((realT)/2)).toFixed(3)} 
   ${(Math.sin(((realT))/2)).toFixed(3) == 0 ? "" : "|1\\rangle"}  $$`;
+
+
+  
 
   return (
     <div>
       <Container>
     <Canvas>
+     
       <Environment preset="night" background blur={0.6} />
       <ambientLight intensity={3  } />
       <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} />
       <pointLight position={[-10, -10, -10]} />
       
       <BlochSphere position={[0, 0, 0]} />
-      <LineBetweenPoints Theta = {polarAngles.theta} Phi = {polarAngles.phi} />
+      <LineBetweenPoints radiansTheta = {thetaSlerp} radiansPhi = {phiSlerp} />
       
       {/*billbords overlays*/}
       <BillboardText text="|0>" position={[0, 6, 0]} camera />
       <BillboardText text="|1>" position={[0, -5.3, 0]} camera />
 
-      <OrbitControls />
-    </Canvas>
       
-    <div>
-    <h1>Angles</h1>
-      <label>
-        Polar (Theta - θ):
-        <input
-          type="range"
-          min="0"
-          max="10"
-          step="1" // Adjust the step value as needed
-          value={polarAngles.theta}
-          onChange={handleThetaChange}
-        />
-        <span>
-        {polarAngles.theta}π/10 = {realT}
-        </span>
-        
-      </label>
-      <label>
-        Azimutal (Phi - φ):
-        <input
-          type="range"
-          min="0"
-          max="24"
-          step="1" // Adjust the step value as needed
-          value={polarAngles.phi}
-          onChange={handlePhiChange}
-        />
-        <span>
-        {polarAngles.phi}π/12 = {realP}
-        </span>
-         
-      </label>
-    </div>
+
+      {!areOrbitControlsEnabled && <CameraSettings/>}
+      {areOrbitControlsEnabled && <OrbitControls />}
+    </Canvas>
+      <SettingsDiv>
+        <div>
+        <h1>Angles</h1>
+          <label>
+            Polar (Theta - θ):
+            <input
+              type="range"
+              min="0"
+              max="10"
+              step="1" // Adjust the step value as needed
+              value={mathPINum.theta}
+              onChange={handleThetaChange}
+            />
+            <span>
+            {mathPINum.theta}π/10 = {(realT*(180/Math.PI)).toFixed(0) }°
+            </span>
+            
+          </label>
+          <label>
+            Azimutal (Phi - φ):
+            <input
+              type="range"
+              min="0"
+              max="24"
+              step="1" // Adjust the step value as needed
+              value={mathPINum.phi}
+              onChange={handlePhiChange}
+            />
+            <span>
+            {mathPINum.phi}π/12 = {(realP*(180/Math.PI)).toFixed(0) }°
+            </span>
+            
+          </label>
+        </div>
+
+
+
+
+        <div>
+          <h1>Gates</h1>
+          <GatesDiv>
+            <StyledButtonGate
+           
+            >X</StyledButtonGate>
+            <StyledButtonGate>Y</StyledButtonGate>
+            <StyledButtonGate>Z</StyledButtonGate>
+            <StyledButtonGate
+             onClick={() => (setIsGateH(true),setGateMode(true))}>H</StyledButtonGate>
+            <StyledButtonGate>S</StyledButtonGate>
+            <StyledButtonGate>T</StyledButtonGate>
+          </GatesDiv>
+        </div>
+
+
+      </SettingsDiv>
+    
    </Container>
       <OutBox>
       <h1>Quantum State</h1>
@@ -315,6 +472,7 @@ export default function App() {
           
         </div>
       </OutBox>
+      
     </div>
   
   )
