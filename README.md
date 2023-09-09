@@ -22,5 +22,6 @@ This implementation allows the user to:
 - **React**
 - **React Three Fiber**
 - **Three.js**
+https://th3-rocha.github.io/Bloch-sphere-with-React-Three-Fiber/
 
 Overall, this project provides a reusable React component to add an interactive Bloch sphere visualization to any web-based quantum education or research application.
