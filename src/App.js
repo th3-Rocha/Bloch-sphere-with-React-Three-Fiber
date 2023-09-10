@@ -7,14 +7,64 @@ import { useThree } from '@react-three/fiber';
 import React from 'react'; 
 import * as math from 'mathjs';
 
+const Screen = styled.div`
+  Canvas{
+    min-height: 85vh;
+    
+  }
+`;
 
 const GatesDiv = styled.span`
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(2, 1fr);
   gap: 1rem;
+  margin-bottom: 1rem;
+  margin-left: 1rem;
+  margin-right: 1rem;
+`;
+const CheckDiv = styled.span`
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  margin-left: 1rem;
+  margin-right: 1rem;
 `;
 
+const CheckboxContainer = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+`;
+
+const CheckboxInput = styled.input`
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #0075ff;
+  border-radius: 3px;
+  cursor: pointer;
+
+  &:checked {
+    background-color: #0075ff;
+  }
+`;
+
+const CheckboxLabel = styled.span`
+  font-size: 16px;
+  color: #333;
+`;
+
+function Checkbox({ id, label,onChange }) {
+  return (
+    <CheckboxContainer htmlFor={id}>
+      <CheckboxInput onChange={onChange}  type="checkbox" id={id} />
+      <CheckboxLabel>{label}</CheckboxLabel>
+    </CheckboxContainer>
+  );
+}
 const SettingsDiv = styled.div`
  display: flex;
  flex-direction: column;
@@ -47,6 +97,7 @@ const StyledButtonGate = styled.button`
 `;
 
 const OutBox = styled.div`
+  
   display: flex;
   flex-direction: column;
   justify-content: space-around;
@@ -54,8 +105,6 @@ const OutBox = styled.div`
   background-color: #000;
   color: #e5e5e5;
   overflow: hidden;
-  height: 16vh;
-  
   h1{
     margin: 0;
   }
@@ -71,25 +120,31 @@ const OutBox = styled.div`
   }
 `;
 
+ 
+
 const Container = styled.div`
+
+  user-select: none;
   display: flex;
   flex-direction: row;
   max-height: 84vh;
-  justify-content: center;
-  align-items: center;
-  background-color: #f0f0f0; /* Set your desired background color */
+  justify-content: start;
+  align-items: start;
+  background-color: transparent;
   overflow: hidden;
-  
-  Canvas {
-    min-height: 99vh;
-  }
+  position: absolute;
+  top: 60%;
+  left: 88%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  box-shadow: 0px 0px 10px rgba(255, 255, 255, 1); /* Add a subtle box shadow */
+  border-radius: 10px;
 
   div {
     width: 20vw;
     display: flex;
-    background-color: #fff; /* Set the background color for the div */
-    border-radius: 8px;
-    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2); /* Add a subtle box shadow */
+    background-color: rgba(255, 255, 255, 0.6); /* Set the background color for the div */
+   
     text-align: center;
 
     h1 {
@@ -178,25 +233,92 @@ function AxisArrow({ rotZ,rotX,rotY,position, color,axis }) {
 }
 
 
-function LineBetweenPoints({ radiansTheta, radiansPhi }) {
+
+//circle show off
+function LineCircle({ radiansTheta, radiansPhi, uniqueId, isZ, isEnabled}) {
+  const { scene } = useThree();
+
+  useEffect(() => {
+    // Cleanup previous line
+    const existingLine = scene.getObjectByName(`Circle_${uniqueId}`);
+    if (existingLine) {
+      scene.remove(existingLine);
+    }
+
+    // Create a CatmullRom curve between two points
+    const radius = 5; // Adjust the radius as needed
+    const points = [];
+    const segments = 80; // Adjust the number of segments for a smoother curve
+    if (isZ) {
+      for (let i = 0; i <= segments; i++) {
+        const phi = (i / segments) * Math.PI * 2;
+        const x = radius * Math.cos(radiansPhi + phi);
+        const y = radius * Math.sin(radiansPhi + phi);
+        points.push(new THREE.Vector3(0, x, y));
+      }
+    }else{
+      for (let i = 0; i <= segments; i++) {
+        const phi = (i / segments) * Math.PI * 2;
+        const x = radius * Math.sin(radiansTheta) * Math.cos(radiansPhi + phi);
+        const y = radius * Math.sin(radiansTheta) * Math.sin(radiansPhi + phi);
+        const z = radius * Math.cos(radiansTheta);
+        points.push(new THREE.Vector3(x, z, y));
+      }
+    }
+      
+    
+   
+
+    const curve = new THREE.CatmullRomCurve3(points);
+
+    const lineGeometry = new THREE.BufferGeometry().setFromPoints(curve.getPoints(segments));
+
+    const lineMaterial = new THREE.LineBasicMaterial({
+      color: 0x808080
+    });
+
+    const circle = new THREE.Line(lineGeometry, lineMaterial);
+    circle.name = `Circle_${uniqueId}`;
+    if (isZ) {
+      // Rotate the line around its own Z-axis
+      circle.rotation.y = radiansPhi;
+    }
+    
+    
+    //circle.computeLineDistances();
+    if(isEnabled){
+      scene.add(circle);
+    }else{
+      
+    }
+    
+    
+  }, [radiansTheta, radiansPhi,scene]);
+
+  return (
+    <group>
+      
+    </group>
+  );
+}
+
+
+
+function LineBetweenPoints({ radiansTheta, radiansPhi, uniqueId, onlyXY, onlyZ,isEnabled }) {
   const pointZero = useRef();
   const pointTarget = useRef();
 
-  //let realTheta = (Theta * Math.PI) / 10;
-  //let realPhi = (Phi * Math.PI) / 12;
-
-
   const { scene } = useThree();
 
-  // Declare linePosition here so it's accessible in the entire component
-  const linePosition = new THREE.Vector3();
+  let linePositionTarget = new THREE.Vector3();
+  let linePositionZero = new THREE.Vector3();
 
   // Create a ref for the sphere
   const sphereRef = useRef();
 
   useEffect(() => {
     // Cleanup previous line
-    const existingLine = scene.getObjectByName('line');
+    const existingLine = scene.getObjectByName(`line_${uniqueId}`);
     if (existingLine) {
       scene.remove(existingLine);
     }
@@ -207,38 +329,66 @@ function LineBetweenPoints({ radiansTheta, radiansPhi }) {
     const y = radius * Math.sin(radiansTheta) * Math.sin(radiansPhi);
     const z = radius * Math.cos(radiansTheta);
 
-    linePosition.set(y, z, x);
+
+    linePositionTarget.set( y, onlyXY ? 0 : z, x);
+
+    if(onlyZ){
+      linePositionZero.set(y, 0,  x);
+
+    }
 
     const lineGeometry = new THREE.BufferGeometry().setFromPoints([
-      pointZero.current?.position || new THREE.Vector3(),
-      linePosition,
+      linePositionZero || new THREE.Vector3(),
+      linePositionTarget,
     ]);
-    const lineMaterial = new THREE.LineBasicMaterial({ color: 0xFFFF00 });
+
+    let lineMaterial = new THREE.LineDashedMaterial({
+      color: 0xFFFF00,
+      linewidth: 10, // Adjust the linewidth as needed
+      dashSize: 1,
+      gapSize: 0,
+    });
+
+    if(onlyXY || onlyZ){
+      const dashSize = 0.15; // Adjust the dash size as needed
+      const gapSize = 0.25; // Adjust the gap size as needed
+      lineMaterial = new THREE.LineDashedMaterial({
+        color: 0x808080,
+        dashSize: dashSize,
+        gapSize: gapSize,
+      });
+    }
     const line = new THREE.Line(lineGeometry, lineMaterial);
 
     // Set a name for the line object for easy removal later
-    line.name = 'line';
-  // Update the position of the sphere
+    line.name = `line_${uniqueId}`;
+    line.computeLineDistances();
+    // Update the position of the sphere
   if (pointTarget.current) {
-    pointTarget.current.position.copy(linePosition);
+    pointTarget.current.position.copy(linePositionTarget);
   }
+  if(isEnabled){
     scene.add(line);
-  }, [radiansTheta, radiansPhi, scene, pointZero, linePosition]);
+  }else{
+
+  }
+
+  }, [scene,linePositionTarget]);
 
   // Use useFrame to continuously update the sphere's position
   useFrame(() => {
     if (sphereRef.current) {
       // Update the sphere's position to match the line's end position
-      sphereRef.current.position.copy(linePosition);
+      sphereRef.current.position.copy(linePositionTarget);
     }
   });
 
   return (
     <group>
-      <mesh position={linePosition} ref={pointTarget}>
-        <sphereGeometry args={[0.05, 16, 16]} />
-        <BillboardText text="|Ѱ>" position={linePosition} camera />
-        <meshBasicMaterial color="yellow" />
+      <mesh position={linePositionTarget} ref={pointTarget}>
+      
+        {(onlyXY || onlyZ) ? "" : (<mesh><BillboardText text="|ψ>" camera />    <meshStandardMaterial color={0xffff00} /> <sphereGeometry  args={[0.05, 16, 16]} /></mesh>) }
+        
       </mesh>
       
     </group>
@@ -288,9 +438,17 @@ function BlochSphere(props) {
 
 
 export default function App() {
+  
   const [isButtonPressed, setIsButtonPressed] = useState(true);
   const [areOrbitControlsEnabled, setOrbitControlsEnabled] = useState(false);
   const [isGateMode, setGateMode] = useState(false);
+
+  //Overlays varibales
+  const [anglesCircles, setAnglesCircles] = useState(false);
+  const [dashedLines, setDashedLines] = useState(false);
+  const [anglesLines, setAnglesLines] = useState(false);
+  const [symbols, setSymbols] = useState(false);
+  //
 
   useEffect(() => {
     setTimeout(() => {
@@ -383,86 +541,93 @@ if (isGateMode) {
   ${(Math.sin(((realT))/2)).toFixed(3) == 0 ? "" : "|1\\rangle"}  $$`;
 
 
-  
 
   return (
-    <div>
-      <Container>
-    <Canvas>
-     
-      <Environment preset="night" background blur={0.6} />
-      <ambientLight intensity={3  } />
-      <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} />
-      <pointLight position={[-10, -10, -10]} />
-      
-      <BlochSphere position={[0, 0, 0]} />
-      <LineBetweenPoints radiansTheta = {thetaSlerp} radiansPhi = {phiSlerp} />
-      {/*billbords overlays*/}
-      <BillboardText text="|0>" position={[0, 6, 0]} camera />
-      <BillboardText text="|1>" position={[0, -5.3, 0]} camera />
-
-      
-
-      {!areOrbitControlsEnabled && <CameraSettings/>}
-      {areOrbitControlsEnabled && <OrbitControls />}
-    </Canvas>
-      <SettingsDiv>
+    <Screen>
+        <Canvas  >
+          <Environment preset="night" background blur={0.6} />
+          <ambientLight intensity={3  } />
+          <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} />
+          <pointLight position={[-10, -10, -10]} />
+          
+          <BlochSphere position={[0, 0, 0]} />
+          <LineBetweenPoints isEnabled = {true}  radiansTheta = {thetaSlerp} radiansPhi = {phiSlerp} uniqueId={"inside"} />
+          <LineBetweenPoints isEnabled = {dashedLines} radiansTheta = {thetaSlerp} radiansPhi = {phiSlerp} uniqueId={"zDashed"} onlyZ={true} />
+          <LineBetweenPoints isEnabled = {dashedLines} radiansTheta = {thetaSlerp} radiansPhi = {phiSlerp} uniqueId={"xyDashed"} onlyXY={true} />
+          
+          {/*billbords overlays*/}
+          <BillboardText text="|0>" position={[0, 6, 0]} camera />
+          <BillboardText text="|1>" position={[0, -5.3, 0]} camera />
+          <LineCircle isEnabled={anglesCircles} radiansTheta = {thetaSlerp} radiansPhi = {phiSlerp}  uniqueId={"circleZ"}/>
+          <LineCircle isEnabled={anglesCircles} radiansTheta = {thetaSlerp} radiansPhi = {phiSlerp}  uniqueId={"circleX"} isZ = {true}/>)
+          {!areOrbitControlsEnabled && <CameraSettings/>}
+          {areOrbitControlsEnabled && <OrbitControls />}
+        </Canvas>
+        <Container>
+        <SettingsDiv>
         <div>
-        <h1>Angles</h1>
-          <label>
-            Polar (Theta - θ):
-            <input
-              type="range"
-              min="0"
-              max="10"
-              step="1" // Adjust the step value as needed
-              value={mathPINum.theta}
-              onChange={handleThetaChange}
-            />
-            <span>
-            {mathPINum.theta}π/10 = {(realT*(180/Math.PI)).toFixed(0) }°
-            </span>
+          <h1>Overlays</h1>
+          <CheckDiv>
+            <Checkbox onChange = {() => (setAnglesCircles(!anglesCircles))}  label="Angles Circles" />
+            <Checkbox onChange = {() => (setDashedLines(!dashedLines))} label="Dashed Lines" />
+            <Checkbox onChange = {() => (setAnglesLines(!anglesLines))} label="Angles Lines" />
+            <Checkbox onChange = {() => (setSymbols(!symbols))} label="Symbols" />
+          </CheckDiv>
+          
+
+          <h1>Angles</h1>
+            <label>
+              Polar (Theta - θ):
+              <input
+                type="range"
+                min="0"
+                max="10"
+                step="0.5"
+                value={mathPINum.theta}
+                onChange={handleThetaChange}
+              />
+              <span>
+              {mathPINum.theta}π/10 = {(realT*(180/Math.PI)).toFixed(0) }°
+              </span>
+              
+            </label>
+            <label>
+              Azimutal (Phi - φ):
+              <input
+                type="range"
+                min="0"
+                max="24"
+                step="0.3" 
+                value={mathPINum.phi}
+                onChange={handlePhiChange}
+              />
+              <span>
+              {mathPINum.phi}π/12 = {(realP*(180/Math.PI)).toFixed(0) }°
+              </span>
+            </label>
+
+            <h1>Gates</h1>
+            <GatesDiv>
+              <StyledButtonGate
             
-          </label>
-          <label>
-            Azimutal (Phi - φ):
-            <input
-              type="range"
-              min="0"
-              max="24"
-              step="1" // Adjust the step value as needed
-              value={mathPINum.phi}
-              onChange={handlePhiChange}
-            />
-            <span>
-            {mathPINum.phi}π/12 = {(realP*(180/Math.PI)).toFixed(0) }°
-            </span>
-            
-          </label>
-        </div>
+              >X</StyledButtonGate>
+              <StyledButtonGate>Y</StyledButtonGate>
+              <StyledButtonGate>Z</StyledButtonGate>
+              <StyledButtonGate
+              onClick={() => (setIsGateH(true),setGateMode(true))}>H</StyledButtonGate>
+              <StyledButtonGate>S</StyledButtonGate>
+              <StyledButtonGate>T</StyledButtonGate>
+            </GatesDiv>
+
+          </div>
 
 
 
 
-        <div>
-          <h1>Gates</h1>
-          <GatesDiv>
-            <StyledButtonGate
-           
-            >X</StyledButtonGate>
-            <StyledButtonGate>Y</StyledButtonGate>
-            <StyledButtonGate>Z</StyledButtonGate>
-            <StyledButtonGate
-             onClick={() => (setIsGateH(true),setGateMode(true))}>H</StyledButtonGate>
-            <StyledButtonGate>S</StyledButtonGate>
-            <StyledButtonGate>T</StyledButtonGate>
-          </GatesDiv>
-        </div>
 
 
-      </SettingsDiv>
-    
-   </Container>
+        </SettingsDiv>
+   </Container >
       <OutBox>
       <h1>Quantum State</h1>
         <div>
@@ -472,7 +637,7 @@ if (isGateMode) {
         </div>
       </OutBox>
       
-    </div>
+    </Screen>
   
   )
 }
