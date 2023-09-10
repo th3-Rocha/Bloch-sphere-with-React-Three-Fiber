@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { useThree } from '@react-three/fiber';
 import React from 'react'; 
 import * as math from 'mathjs';
+import customFont from './mt.ttf'; 
 
 const Screen = styled.div`
   Canvas{
@@ -133,7 +134,7 @@ const Container = styled.div`
   background-color: transparent;
   overflow: hidden;
   position: absolute;
-  top: 60%;
+  top: 30%;
   left: 88%;
   transform: translate(-50%, -50%);
   z-index: 5;
@@ -172,9 +173,16 @@ const Container = styled.div`
 `;
 
 
-function BillboardText({ text, position }){
+function BillboardText({ text, position, isEnabled }){
   const textRef = useRef();
+  
+  if(!isEnabled){
+    text=""
 
+  }else{
+
+
+  }
 
   useFrame(({ camera }) => {
     
@@ -188,7 +196,7 @@ function BillboardText({ text, position }){
   });
 
   return (
-    <Text    ref={textRef} position={position} fontSize={0.4} color="white">
+    <Text  font= {customFont}  ref={textRef} position={position} fontSize={0.4} color="white">
       {text}
     </Text>
   );
@@ -232,7 +240,52 @@ function AxisArrow({ rotZ,rotX,rotY,position, color,axis }) {
   )
 }
 
+function PartialCircle({ radiansTheta, radiansPhi, uniqueId, isEnabled }) {
+  const { scene } = useThree();
 
+  useEffect(() => {
+    // Cleanup previous line
+    const existingLine = scene.getObjectByName(`PartialCircle_${uniqueId}`);
+    if (existingLine) {
+      scene.remove(existingLine);
+    }
+
+    const segments = 80; // Adjust the number of segments for a smoother curve
+
+    const points = [];
+    const startTheta = 0; // Starting angle for the partial circle
+    const endTheta = radiansTheta; // Ending angle for the partial circle
+
+    for (let i = 0; i <= segments; i++) {
+      let radius = 5 + -4 * Math.sin(radiansTheta);
+      radius = radiansTheta <= Math.PI / 2 ? 5 - 4 * Math.sin(radiansTheta) : 1;
+      
+      const theta = startTheta + (i / segments) * (endTheta - startTheta);
+      const x = radius * Math.sin(theta) * Math.cos(radiansPhi);
+      const y = radius * Math.sin(theta) * Math.sin(radiansPhi);
+      const z = radius * Math.cos(theta);
+      points.push(new THREE.Vector3(y, z, x));
+    }
+
+    const curve = new THREE.CatmullRomCurve3(points);
+
+    const lineGeometry = new THREE.BufferGeometry().setFromPoints(curve.getPoints(segments));
+
+    const lineMaterial = new THREE.LineBasicMaterial({
+      color: 0x808080,
+    });
+
+    const circle = new THREE.Line(lineGeometry, lineMaterial);
+    circle.name = `PartialCircle_${uniqueId}`;
+
+    if (isEnabled) {
+      scene.add(circle);
+    }
+
+  }, [radiansTheta, radiansPhi, scene, isEnabled]);
+
+  return null; // Return null because no visible React component is needed
+}
 
 //circle show off
 function LineCircle({ radiansTheta, radiansPhi, uniqueId, isZ, isEnabled}) {
@@ -330,8 +383,8 @@ function LineBetweenPoints({ radiansTheta, radiansPhi, uniqueId, onlyXY, onlyZ,i
     const z = radius * Math.cos(radiansTheta);
 
 
+    
     linePositionTarget.set( y, onlyXY ? 0 : z, x);
-
     if(onlyZ){
       linePositionZero.set(y, 0,  x);
 
@@ -387,7 +440,7 @@ function LineBetweenPoints({ radiansTheta, radiansPhi, uniqueId, onlyXY, onlyZ,i
     <group>
       <mesh position={linePositionTarget} ref={pointTarget}>
       
-        {(onlyXY || onlyZ) ? "" : (<mesh><BillboardText text="|ψ>" camera />    <meshStandardMaterial color={0xffff00} /> <sphereGeometry  args={[0.05, 16, 16]} /></mesh>) }
+        {(onlyXY || onlyZ) ? "" : (<mesh> <meshStandardMaterial color={0xffff00} /> <sphereGeometry  args={[0.05, 16, 16]} /></mesh>) }
         
       </mesh>
       
@@ -442,7 +495,8 @@ export default function App() {
   const [isButtonPressed, setIsButtonPressed] = useState(true);
   const [areOrbitControlsEnabled, setOrbitControlsEnabled] = useState(false);
   const [isGateMode, setGateMode] = useState(false);
-
+  const [linePositionTarget, setLinePositionTarget] = useState();
+ 
   //Overlays varibales
   const [anglesCircles, setAnglesCircles] = useState(false);
   const [dashedLines, setDashedLines] = useState(false);
@@ -522,20 +576,39 @@ if (isGateMode) {
   radiansPhi = realP;
 }
  
+ 
+ 
 
   const [thetaSlerp, setThetaSlerp] = useState(0);
   const [phiSlerp, setPhiSlerp] = useState(0);
 
   useEffect(() => {
+   
+    
     const interval = setInterval(() => {
       setThetaSlerp(prev => prev + (radiansTheta - prev) * 0.02);  
-      setPhiSlerp(prev => prev + (radiansPhi - prev) * 0.02); 
+      setPhiSlerp(prev => prev + (radiansPhi - prev) * 0.02);
+   
     }, 5);
+
     return () => clearInterval(interval);
   }, [radiansTheta, radiansPhi]);
- 
-  let waveFunction = `$$|\\psi\\rangle = \\cos\\left(\\frac{${ realT.toFixed(3) == 0 ? "θ" : (realT*(180/Math.PI)).toFixed(0) +"°"}}{2}\\right)|0\\rangle + e^{i${ realP.toFixed(3) == 0 ? "φ" : (realP*(180/Math.PI)).toFixed(0) +"°" }}\\sin\\left(\\frac{${realT.toFixed(3) == 0 ? "θ" : (realT*(180/Math.PI)).toFixed(0) + "°" }}{2}\\right)|1\\rangle \\Rightarrow $$`;
 
+  useEffect(() => {
+    const radius = 5; 
+    let x = radius * Math.sin(thetaSlerp) * Math.cos(phiSlerp);
+    let y = radius * Math.sin(thetaSlerp) * Math.sin(phiSlerp);
+    let z = radius * Math.cos(thetaSlerp);
+    let tt = new THREE.Vector3();
+    tt.set(y,z + 0.5,x);
+    setLinePositionTarget(tt);
+  }, [thetaSlerp, phiSlerp]);
+  
+
+
+
+
+  let waveFunction = `$$|\\psi\\rangle = \\cos\\left(\\frac{${ realT.toFixed(3) == 0 ? "θ" : (realT*(180/Math.PI)).toFixed(0) +"°"}}{2}\\right)|0\\rangle + e^{i${ realP.toFixed(3) == 0 ? "φ" : (realP*(180/Math.PI)).toFixed(0) +"°" }}\\sin\\left(\\frac{${realT.toFixed(3) == 0 ? "θ" : (realT*(180/Math.PI)).toFixed(0) + "°" }}{2}\\right)|1\\rangle \\Rightarrow $$`;
   let waveFunction2 = `$$|\\psi\\rangle ${ Math.cos((realT)/2).toFixed(6) == 0 ? "=" : Math.cos((realT)/2).toFixed(6) == 1 ? "=" : "\\cong"}  ${ Math.cos((realT)/2).toFixed(6) == 0 ? "" : Math.cos((realT)/2).toFixed(6) == 1 ? "" : (Math.cos((realT)/2)).toFixed(3)   } 
   ${Math.cos((realT)/2).toFixed(6) == 0 ? "" : "|0 \\rangle"} ${Math.cos((realT)/2).toFixed(6) == 1 ? "" : Math.cos((realT)/2).toFixed(6) == 0 ? "" : "+"} ${(Math.sin((realT)/2)).toFixed(3) == 0 ? "" :(Math.sin((realT)/2)).toFixed(3) == 1 ? "" : (Math.sin((realT)/2)).toFixed(3)} 
   ${(Math.sin(((realT))/2)).toFixed(3) == 0 ? "" : "|1\\rangle"}  $$`;
@@ -555,11 +628,13 @@ if (isGateMode) {
           <LineBetweenPoints isEnabled = {dashedLines} radiansTheta = {thetaSlerp} radiansPhi = {phiSlerp} uniqueId={"zDashed"} onlyZ={true} />
           <LineBetweenPoints isEnabled = {dashedLines} radiansTheta = {thetaSlerp} radiansPhi = {phiSlerp} uniqueId={"xyDashed"} onlyXY={true} />
           
+          <BillboardText isEnabled={symbols} position={linePositionTarget} text="|ψ⟩" camera /> 
           {/*billbords overlays*/}
-          <BillboardText text="|0>" position={[0, 6, 0]} camera />
-          <BillboardText text="|1>" position={[0, -5.3, 0]} camera />
+          <BillboardText isEnabled={true} text="|0⟩" position={[0, 6, 0]} camera />
+          <BillboardText isEnabled={true} text="|1⟩" position={[0, -5.3, 0]} camera />
           <LineCircle isEnabled={anglesCircles} radiansTheta = {thetaSlerp} radiansPhi = {phiSlerp}  uniqueId={"circleZ"}/>
           <LineCircle isEnabled={anglesCircles} radiansTheta = {thetaSlerp} radiansPhi = {phiSlerp}  uniqueId={"circleX"} isZ = {true}/>)
+          <PartialCircle isEnabled={true} radiansTheta = {thetaSlerp} radiansPhi = {phiSlerp}  uniqueId={"cirdasdasdX"} isZ = {true}/>)
           {!areOrbitControlsEnabled && <CameraSettings/>}
           {areOrbitControlsEnabled && <OrbitControls />}
         </Canvas>
