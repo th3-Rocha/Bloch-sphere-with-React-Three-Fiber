@@ -179,8 +179,8 @@ function AxisArrow({ rotZ,rotX,rotY,position, color,axis }) {
 
 
 function LineBetweenPoints({ radiansTheta, radiansPhi }) {
-  const point1 = useRef();
-  const point2 = useRef();
+  const pointZero = useRef();
+  const pointTarget = useRef();
 
   //let realTheta = (Theta * Math.PI) / 10;
   //let realPhi = (Phi * Math.PI) / 12;
@@ -210,7 +210,7 @@ function LineBetweenPoints({ radiansTheta, radiansPhi }) {
     linePosition.set(y, z, x);
 
     const lineGeometry = new THREE.BufferGeometry().setFromPoints([
-      point1.current?.position || new THREE.Vector3(),
+      pointZero.current?.position || new THREE.Vector3(),
       linePosition,
     ]);
     const lineMaterial = new THREE.LineBasicMaterial({ color: 0xFFFF00 });
@@ -219,11 +219,11 @@ function LineBetweenPoints({ radiansTheta, radiansPhi }) {
     // Set a name for the line object for easy removal later
     line.name = 'line';
   // Update the position of the sphere
-  if (point2.current) {
-    point2.current.position.copy(linePosition);
+  if (pointTarget.current) {
+    pointTarget.current.position.copy(linePosition);
   }
     scene.add(line);
-  }, [radiansTheta, radiansPhi, scene, point1, linePosition]);
+  }, [radiansTheta, radiansPhi, scene, pointZero, linePosition]);
 
   // Use useFrame to continuously update the sphere's position
   useFrame(() => {
@@ -235,7 +235,7 @@ function LineBetweenPoints({ radiansTheta, radiansPhi }) {
 
   return (
     <group>
-      <mesh position={linePosition} ref={point2}>
+      <mesh position={linePosition} ref={pointTarget}>
         <sphereGeometry args={[0.05, 16, 16]} />
         <BillboardText text="|Ѱ>" position={linePosition} camera />
         <meshBasicMaterial color="yellow" />
@@ -397,7 +397,6 @@ if (isGateMode) {
       
       <BlochSphere position={[0, 0, 0]} />
       <LineBetweenPoints radiansTheta = {thetaSlerp} radiansPhi = {phiSlerp} />
-      
       {/*billbords overlays*/}
       <BillboardText text="|0>" position={[0, 6, 0]} camera />
       <BillboardText text="|1>" position={[0, -5.3, 0]} camera />
