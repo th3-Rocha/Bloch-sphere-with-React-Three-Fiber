@@ -203,7 +203,8 @@ function BillboardText({ text, position, isEnabled }){
 };
 
 
-
+console.warn = function() {};
+console.error = function() {};
 
 function AxisArrow({ rotZ,rotX,rotY,position, color,axis }) {
   const size = 5;
@@ -224,6 +225,7 @@ function AxisArrow({ rotZ,rotX,rotY,position, color,axis }) {
           <meshBasicMaterial color={hovered ? 'white' : color } transparent = {true} opacity={0.3}  />
         </mesh>
           <Text 
+            font={customFont}
             anchorX="center"
             anchorY="middle"
             fontSize = "0.4"
@@ -713,6 +715,10 @@ if (isGateMode) {
           {/*billbords overlays*/}
           <BillboardText isEnabled={true} text="|0⟩" position={[0, 6, 0]} camera />
           <BillboardText isEnabled={true} text="|1⟩" position={[0, -5.3, 0]} camera />
+
+          <BillboardText isEnabled={true} text="|+⟩" position={[0, 0,6]} camera />
+          <BillboardText isEnabled={true} text="|-⟩" position={[0, 0, -5.3]} camera />
+
           <LineCircle isEnabled={anglesCircles} radiansTheta = {thetaSlerp} radiansPhi = {phiSlerp}  uniqueId={"circleZ"}/>
           <LineCircle isEnabled={anglesCircles} radiansTheta = {thetaSlerp} radiansPhi = {phiSlerp}  uniqueId={"circleX"} isZ = {true}/>)
           <PartialCircle text="θ" isEnabled={symbols} radiansTheta = {thetaSlerp} radiansPhi = {phiSlerp}  uniqueId={"thetaAngle"} isZ = {true}/>)
