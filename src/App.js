@@ -240,9 +240,11 @@ function AxisArrow({ rotZ,rotX,rotY,position, color,axis }) {
   )
 }
 
-function PartialCircle({ radiansTheta, radiansPhi, uniqueId, isEnabled }) {
+function PartialCircle({ radiansTheta, radiansPhi, uniqueId, isEnabled, isZ, text }) {
   const { scene } = useThree();
+  let textRef = useRef();
 
+  let billBoardPostion = new THREE.Vector3();
   useEffect(() => {
     // Cleanup previous line
     const existingLine = scene.getObjectByName(`PartialCircle_${uniqueId}`);
@@ -251,40 +253,119 @@ function PartialCircle({ radiansTheta, radiansPhi, uniqueId, isEnabled }) {
     }
 
     const segments = 80; // Adjust the number of segments for a smoother curve
-
+    const segHalf = Math.floor(segments/2);
     const points = [];
     const startTheta = 0; // Starting angle for the partial circle
     const endTheta = radiansTheta; // Ending angle for the partial circle
 
-    for (let i = 0; i <= segments; i++) {
-      let radius = 5 + -4 * Math.sin(radiansTheta);
-      radius = radiansTheta <= Math.PI / 2 ? 5 - 4 * Math.sin(radiansTheta) : 1;
-      
-      const theta = startTheta + (i / segments) * (endTheta - startTheta);
-      const x = radius * Math.sin(theta) * Math.cos(radiansPhi);
-      const y = radius * Math.sin(theta) * Math.sin(radiansPhi);
-      const z = radius * Math.cos(theta);
-      points.push(new THREE.Vector3(y, z, x));
+    const startPhi = 0; // Starting angle for the partial circle
+    const endPhi = radiansPhi; // Ending angle for the partial circle
+
+    function approximatelyEqual(a, b, tolerance = 0.01) {
+      return Math.abs(a - b) < tolerance;
     }
+    if(isZ){
+      for (let i = 0; i <= segments; i++) {
+        let radius = 5 + -4 * Math.sin(radiansTheta);
+        radius = radiansTheta <= Math.PI / 2 ? 5 - 4 * Math.sin(radiansTheta) : 1;
+        
+        const theta = startTheta + (i / segments) * (endTheta - startTheta);
+        const x = radius * Math.sin(theta) * Math.cos(radiansPhi);
+        const y = radius * Math.sin(theta) * Math.sin(radiansPhi);
+        const z = radius * Math.cos(theta);
+        points.push(new THREE.Vector3(y, z, x));
+        if(i == segHalf){
+          
+          
+          if(approximatelyEqual(radiansTheta,0)){
+            billBoardPostion.set(8880,z + 8888.2 ,x + 8880.2);
+          }else{
+            billBoardPostion.set(y,z + 0.2 ,x + 0.2);
+          }
+
+          textRef.current.position.copy(billBoardPostion);
+        }
+      }
+
+    }else{
+      //phioiiii
+      for (let i = 0; i <= segments; i++) {
+        let radius = 5 + -4 * Math.sin(radiansTheta);
+        radius =  4 * Math.sin(radiansTheta);
+        
+        const phi = startPhi + (i / segments) * (endPhi - startPhi);
+        const x = radius * Math.sin(phi) ;
+        const y = radius * Math.sin(phi) ;
+        const z = radius * Math.cos(phi);
+        points.push(new THREE.Vector3(y, 0, z));
+        if(i == segHalf){
+          
+          
+          if(approximatelyEqual(radiansPhi,0)){
+            billBoardPostion.set(8880,z + 8888.2 ,x + 8880.2);
+          }else{
+            billBoardPostion.set(y + 0.1,0,z + 0.1);
+          }
+
+          textRef.current.position.copy(billBoardPostion);
+        }
+      }
+    }
+
 
     const curve = new THREE.CatmullRomCurve3(points);
 
     const lineGeometry = new THREE.BufferGeometry().setFromPoints(curve.getPoints(segments));
 
-    const lineMaterial = new THREE.LineBasicMaterial({
+    const dashSize = 0.15; // Adjust the dash size as needed
+    const gapSize = 0.25; // Adjust the gap size as needed
+    const lineMaterial = new THREE.LineDashedMaterial({
       color: 0x808080,
+      dashSize: dashSize,
+      gapSize: gapSize,
     });
 
     const circle = new THREE.Line(lineGeometry, lineMaterial);
     circle.name = `PartialCircle_${uniqueId}`;
-
+    circle.computeLineDistances();
     if (isEnabled) {
       scene.add(circle);
     }
 
   }, [radiansTheta, radiansPhi, scene, isEnabled]);
 
-  return null; // Return null because no visible React component is needed
+
+  //text
+
+
+  
+  
+  if(!isEnabled){
+    text=""
+
+  }else{
+
+
+  }
+
+  //textRef.current.position.copy(billBoardPostion);
+  useFrame(({ camera }) => {
+    
+    // Calculate the direction vector from the camera to the text
+    const lookAtVector = camera.position.clone().sub(textRef.current.position);
+
+    // Set the text's rotation to face the camera
+    textRef.current.quaternion.setFromRotationMatrix(
+      new THREE.Matrix4().lookAt(lookAtVector, new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 1, 0))
+    );
+  });
+    
+  console.log(billBoardPostion)
+  return (
+    <Text  font= {customFont}  ref={textRef} position={[1,1,1]}  fontSize={0.4} color="white">
+      {text}
+    </Text>
+  ); 
 }
 
 //circle show off
@@ -409,6 +490,8 @@ function LineBetweenPoints({ radiansTheta, radiansPhi, uniqueId, onlyXY, onlyZ,i
         color: 0x808080,
         dashSize: dashSize,
         gapSize: gapSize,
+        transparent: true, // Enable transparency
+        opacity: 0.7, // Set opacity (0.0 to 1.0)
       });
     }
     const line = new THREE.Line(lineGeometry, lineMaterial);
@@ -440,7 +523,7 @@ function LineBetweenPoints({ radiansTheta, radiansPhi, uniqueId, onlyXY, onlyZ,i
     <group>
       <mesh position={linePositionTarget} ref={pointTarget}>
       
-        {(onlyXY || onlyZ) ? "" : (<mesh> <meshStandardMaterial color={0xffff00} /> <sphereGeometry  args={[0.05, 16, 16]} /></mesh>) }
+        {(onlyXY || onlyZ) ? undefined : (<mesh><meshStandardMaterial color={0xffff00} /><sphereGeometry  args={[0.05, 16, 16]} /></mesh>) }
         
       </mesh>
       
@@ -499,8 +582,6 @@ export default function App() {
  
   //Overlays varibales
   const [anglesCircles, setAnglesCircles] = useState(false);
-  const [dashedLines, setDashedLines] = useState(false);
-  const [anglesLines, setAnglesLines] = useState(false);
   const [symbols, setSymbols] = useState(false);
   //
 
@@ -625,8 +706,8 @@ if (isGateMode) {
           
           <BlochSphere position={[0, 0, 0]} />
           <LineBetweenPoints isEnabled = {true}  radiansTheta = {thetaSlerp} radiansPhi = {phiSlerp} uniqueId={"inside"} />
-          <LineBetweenPoints isEnabled = {dashedLines} radiansTheta = {thetaSlerp} radiansPhi = {phiSlerp} uniqueId={"zDashed"} onlyZ={true} />
-          <LineBetweenPoints isEnabled = {dashedLines} radiansTheta = {thetaSlerp} radiansPhi = {phiSlerp} uniqueId={"xyDashed"} onlyXY={true} />
+          <LineBetweenPoints isEnabled = {symbols} radiansTheta = {thetaSlerp} radiansPhi = {phiSlerp} uniqueId={"zDashed"} onlyZ={true} />
+          <LineBetweenPoints isEnabled = {symbols} radiansTheta = {thetaSlerp} radiansPhi = {phiSlerp} uniqueId={"xyDashed"} onlyXY={true} />
           
           <BillboardText isEnabled={symbols} position={linePositionTarget} text="|ψ⟩" camera /> 
           {/*billbords overlays*/}
@@ -634,7 +715,8 @@ if (isGateMode) {
           <BillboardText isEnabled={true} text="|1⟩" position={[0, -5.3, 0]} camera />
           <LineCircle isEnabled={anglesCircles} radiansTheta = {thetaSlerp} radiansPhi = {phiSlerp}  uniqueId={"circleZ"}/>
           <LineCircle isEnabled={anglesCircles} radiansTheta = {thetaSlerp} radiansPhi = {phiSlerp}  uniqueId={"circleX"} isZ = {true}/>)
-          <PartialCircle isEnabled={true} radiansTheta = {thetaSlerp} radiansPhi = {phiSlerp}  uniqueId={"cirdasdasdX"} isZ = {true}/>)
+          <PartialCircle text="θ" isEnabled={symbols} radiansTheta = {thetaSlerp} radiansPhi = {phiSlerp}  uniqueId={"thetaAngle"} isZ = {true}/>)
+          <PartialCircle text="φ" isEnabled={symbols} radiansTheta = {thetaSlerp} radiansPhi = {phiSlerp}  uniqueId={"phiAngle"} />)
           {!areOrbitControlsEnabled && <CameraSettings/>}
           {areOrbitControlsEnabled && <OrbitControls />}
         </Canvas>
@@ -644,8 +726,6 @@ if (isGateMode) {
           <h1>Overlays</h1>
           <CheckDiv>
             <Checkbox onChange = {() => (setAnglesCircles(!anglesCircles))}  label="Angles Circles" />
-            <Checkbox onChange = {() => (setDashedLines(!dashedLines))} label="Dashed Lines" />
-            <Checkbox onChange = {() => (setAnglesLines(!anglesLines))} label="Angles Lines" />
             <Checkbox onChange = {() => (setSymbols(!symbols))} label="Symbols" />
           </CheckDiv>
           
