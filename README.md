@@ -13,7 +13,6 @@ This implementation allows the user to:
 ## Features
 
 - Rendering of Bloch sphere and pointer using **Three.js**
-- React components for sphere, pointer and controls  
 - **Drag and click** interactivity to adjust state
 - Fully customizable styling
 
@@ -23,4 +22,6 @@ This implementation allows the user to:
 - **React Three Fiber**
 - **Three.js**
 
-Overall, this project provides a reusable React component to add an interactive Bloch sphere visualization to any web-based quantum education or research application.
+
+You can access the interactive Bloch sphere visualization [here](https://th3-rocha.github.io/Bloch-sphere-with-React-Three-Fiber/).
+Overall, this project is an interactive Bloch sphere visualization to any web-based quantum education or research application.
