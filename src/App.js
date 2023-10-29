@@ -7,6 +7,7 @@ import { useThree } from '@react-three/fiber';
 import React from 'react';
 import * as math from 'mathjs';
 import customFont from './mt.ttf';
+import Stats from 'stats.js'
 
 const Screen = styled.div`
   display: flex;
@@ -17,7 +18,7 @@ const Screen = styled.div`
   }
   @media (max-width: 600px) {
     Canvas{
-    min-height: 55vh;
+    min-height: 46vh;
     
   }
   }
@@ -47,31 +48,28 @@ const OutBox = styled.div`
     text-align: center;
   }
 `;
-
-
-
 const Container = styled.div`
   max-width: 250px;
   width: 250px;
-  user-select: none;
+  max-height: 84vh;
   display: flex;
   flex-direction: row;
-  max-height: 84vh;
   justify-content: center;
   align-items: start;
-  background-color: transparent;
-  overflow: hidden;
   position: absolute;
   top: 30%;
   left: 85vw;
   transform: translate(-50%, -50%);
   z-index: 5;
-  box-shadow: 0px 0px 10px rgba(255, 255, 255, 1); /* Add a subtle box shadow */
+  box-shadow: 0px 0px 10px rgba(255, 255, 255, 1);
   border-radius: 10px;
-  display: flex;
-  background-color: rgba(255, 255, 255, 0.8); /* Set the background color for the div */  
+  background-color: rgba(255, 255, 255, 0.8);
+  overflow: hidden;
+  user-select: none;
   text-align: center;
+
   @media (max-width: 600px) {
+    box-shadow: 0px 0px 0px rgba(255, 255, 255, 0);
     position: static;
     top: auto;
     left: auto;
@@ -84,7 +82,7 @@ const Container = styled.div`
   h1 {
     font-size: 1.5rem;
     margin-bottom: 1rem;
-    color: #333; 
+    color: #333;
   }
 
   label {
@@ -99,7 +97,7 @@ const Container = styled.div`
 
     span {
       font-size: 0.8rem;
-      color: #777; 
+      color: #777;
     }
   }
 `;
@@ -274,7 +272,7 @@ function AxisArrow({ rotZ, rotX, rotY, position, color, axis }) {
   )
 }
 
-function PartialCircle({ radiansTheta, radiansPhi, uniqueId, isEnabled, isZ, text }) {
+function PartialCircle({ isSymbols, radiansTheta, radiansPhi, uniqueId, isEnabled, isZ, text }) {
   const { scene } = useThree();
   let textRef = useRef();
 
@@ -371,10 +369,7 @@ function PartialCircle({ radiansTheta, radiansPhi, uniqueId, isEnabled, isZ, tex
 
   //text
 
-
-
-
-  if (!isEnabled) {
+  if (!isSymbols || !isEnabled) {
     text = ""
 
   } else {
@@ -502,7 +497,7 @@ function LineBetweenPoints({ radiansTheta, radiansPhi, uniqueId, onlyXY, onlyZ, 
 
     let lineMaterial = new THREE.LineDashedMaterial({
       color: 0xFFFF00,
-      linewidth: 10, // Adjust the linewidth as needed
+      linewidth: 1, // Adjust the linewidth as needed
       dashSize: 1,
       gapSize: 0,
     });
@@ -572,7 +567,7 @@ function BlochSphere(props) {
       <mesh
         {...props}
         ref={ref}>
-        <sphereGeometry attach="geometry" args={[5, 28, 20]} />
+        <sphereGeometry attach="geometry" args={[5, 18, 18]} />
         <meshBasicMaterial
           attach="material"
           color="grey"
@@ -672,17 +667,29 @@ function stateToAngles(qubit) {
 
 
 
+const stats = new Stats()
+stats.showPanel(0) // 0: fps, 1: ms, 2: mb, 3+: custom
+document.body.appendChild(stats.dom)
 export default function App() {
-
+  stats.begin()
   const [isButtonPressed, setIsButtonPressed] = useState(true);
   const [areOrbitControlsEnabled, setOrbitControlsEnabled] = useState(false);
   const [isGateMode, setGateMode] = useState(false);
   const [linePositionTarget, setLinePositionTarget] = useState();
 
-  //Overlays varibalesrr
+  //Overlays varibales
   const [anglesCircles, setAnglesCircles] = useState(false);
   const [symbols, setSymbols] = useState(true);
+  const [darkMode, setDarkmode] = useState(true);
+  const [dashedLines, setDashedLines] = useState(true);
   //
+  let colorAmbient;
+  if(darkMode){
+    colorAmbient = "black";
+  }else{
+    colorAmbient = "white";
+
+  }
 
   useEffect(() => {
     setTimeout(() => {
@@ -733,7 +740,7 @@ export default function App() {
     setGateMode(false);
     allGatesFalse();
   };
-
+  
 
   //Gates//
   const [isGateH, setIsGateH] = useState(false);
@@ -826,26 +833,10 @@ export default function App() {
     displayedAngle.phi = mathPINum.phi;
     radiansTheta = realT;
     radiansPhi = realP;
-    console.log(realP)
   }
-
-
-
 
   const [thetaSlerp, setThetaSlerp] = useState(0);
   const [phiSlerp, setPhiSlerp] = useState(0);
-
-  useEffect(() => {
-
-
-    const interval = setInterval(() => {
-      setThetaSlerp(prev => prev + (radiansTheta - prev) * 0.02);
-      setPhiSlerp(prev => prev + (radiansPhi - prev) * 0.02);
-
-    }, 5);
-
-    return () => clearInterval(interval);
-  }, [radiansTheta, radiansPhi]);
 
   useEffect(() => {
     const radius = 5;
@@ -857,6 +848,26 @@ export default function App() {
     setLinePositionTarget(tt);
   }, [thetaSlerp, phiSlerp]);
 
+  useEffect(() => {
+    let requestId;
+
+    const updateFrame = () => {
+      setThetaSlerp(prev => prev + (radiansTheta - prev) * 0.02);
+      setPhiSlerp(prev => prev + (radiansPhi - prev) * 0.02);
+
+      // Request the next frame
+      requestId = requestAnimationFrame(updateFrame);
+    };
+
+    // Start the animation loop
+    requestId = requestAnimationFrame(updateFrame);
+
+    // Cleanup: Stop the animation loop when the component unmounts
+    return () => cancelAnimationFrame(requestId);
+  }, );
+
+ 
+
 
 
 
@@ -866,22 +877,31 @@ export default function App() {
   ${Math.cos((realT) / 2).toFixed(6) == 0 ? "" : "|0 \\rangle"} ${Math.cos((realT) / 2).toFixed(6) == 1 ? "" : Math.cos((realT) / 2).toFixed(6) == 0 ? "" : "+"} ${(Math.sin((realT) / 2)).toFixed(3) == 0 ? "" : (Math.sin((realT) / 2)).toFixed(3) == 1 ? "" : (Math.sin((realT) / 2)).toFixed(3)} 
   ${(Math.sin(((realT)) / 2)).toFixed(3) == 0 ? "" : "|1\\rangle"}  $$`;
 
-
-
+  const gatesData = [
+    { gate: 'X', setter: setIsGateX },
+    { gate: 'Y', setter: setIsGateY },
+    { gate: 'Z', setter: setIsGateZ },
+    { gate: 'H', setter: setIsGateH },
+    { gate: 'S', setter: setIsGateS },
+    { gate: 'T', setter: setIsGateT },
+  ];
+  stats.end()
   return (
     <Screen>
       <Canvas  >
-        <color attach="background" args={['black']} />
+        <color attach="background" args={[colorAmbient]} />
         <ambientLight intensity={3} />
         <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} />
         <pointLight position={[-10, -10, -10]} />
 
         <BlochSphere position={[0, 0, 0]} />
         <LineBetweenPoints isEnabled={true} radiansTheta={thetaSlerp} radiansPhi={phiSlerp} uniqueId={"inside"} />
-        <LineBetweenPoints isEnabled={symbols} radiansTheta={thetaSlerp} radiansPhi={phiSlerp} uniqueId={"zDashed"} onlyZ={true} />
-        <LineBetweenPoints isEnabled={symbols} radiansTheta={thetaSlerp} radiansPhi={phiSlerp} uniqueId={"xyDashed"} onlyXY={true} />
+        
+        <LineBetweenPoints isEnabled={dashedLines} radiansTheta={thetaSlerp} radiansPhi={phiSlerp} uniqueId={"zDashed"} onlyZ={true} />
+        <LineBetweenPoints isEnabled={dashedLines} radiansTheta={thetaSlerp} radiansPhi={phiSlerp} uniqueId={"xyDashed"} onlyXY={true} />
 
         <BillboardText isEnabled={symbols} position={linePositionTarget} text="|ψ⟩" camera />
+        
         <BillboardText isEnabled={true} text="|0⟩" position={[0, 6, 0]} camera />
         <BillboardText isEnabled={true} text="|1⟩" position={[0, -5.3, 0]} camera />
         <BillboardText isEnabled={true} text="|+⟩" position={[0, 0, 6]} camera />
@@ -891,8 +911,9 @@ export default function App() {
         <BillboardText color={"red"} isEnabled={true} text="x" position={[0, 0.3, 5.3]} camera />
         <BillboardText color={"green"} isEnabled={true} text="y" position={[5.3, 0.3, 0]} camera />
 
-        <PartialCircle text="θ" isEnabled={symbols} radiansTheta={thetaSlerp} radiansPhi={phiSlerp} uniqueId={"thetaAngle"} isZ={true} />
-        <PartialCircle text="φ" isEnabled={symbols} radiansTheta={thetaSlerp} radiansPhi={phiSlerp} uniqueId={"phiAngle"} />
+        <PartialCircle text="θ" isEnabled={dashedLines} isSymbols={symbols} radiansTheta={thetaSlerp} radiansPhi={phiSlerp} uniqueId={"thetaAngle"} isZ={true} />
+        <PartialCircle text="φ" isEnabled={dashedLines} isSymbols={symbols} radiansTheta={thetaSlerp} radiansPhi={phiSlerp} uniqueId={"phiAngle"} />
+        
         <LineCircle isEnabled={anglesCircles} radiansTheta={thetaSlerp} radiansPhi={phiSlerp} uniqueId={"circleZ"} />
         <LineCircle isEnabled={anglesCircles} radiansTheta={thetaSlerp} radiansPhi={phiSlerp} uniqueId={"circleX"} isZ={true} />
 
@@ -934,23 +955,30 @@ export default function App() {
             </label>
 
             <h1>Gates</h1>
+            
             <GatesDiv>
-              <StyledButtonGate onClick={() => (setIsGateX(true), setGateMode(true))}>X</StyledButtonGate>
-              <StyledButtonGate onClick={() => (setIsGateY(true), setGateMode(true))}>Y</StyledButtonGate>
-              <StyledButtonGate onClick={() => (setIsGateZ(true), setGateMode(true))}>Z</StyledButtonGate>
-              <StyledButtonGate onClick={() => (setIsGateH(true), setGateMode(true))}>H</StyledButtonGate>
-              <StyledButtonGate onClick={() => (setIsGateS(true), setGateMode(true))}>S</StyledButtonGate>
-              <StyledButtonGate onClick={() => (setIsGateT(true), setGateMode(true))}>T</StyledButtonGate>
+              {gatesData.map(({ gate, setter }) => (
+                <StyledButtonGate
+                  key={gate}
+                  onClick={() => {
+                    allGatesFalse();
+                    setter(true);
+                    setGateMode(true);
+                  }}
+                >
+                  {gate}
+                </StyledButtonGate>
+              ))}
             </GatesDiv>
-
 
 
   
             <h1>Overlays</h1>
-            <span>keyboard "R" reset the camera view</span>
             <CheckDiv>
               <Checkbox checked={anglesCircles} onChange={() => (setAnglesCircles(!anglesCircles))} label="Angles Circles" />
               <Checkbox checked={symbols} onChange={() => (setSymbols(!symbols))} label="Symbols" />
+              <Checkbox checked={dashedLines} onChange={() => (setDashedLines(!dashedLines))} label="Dashed Lines" />
+              <Checkbox checked={darkMode} onChange={() => (setDarkmode(!darkMode))} label="Dark Mode" />
             </CheckDiv>
 
           </div>
