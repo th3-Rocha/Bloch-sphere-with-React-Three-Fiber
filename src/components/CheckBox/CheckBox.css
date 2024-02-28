@@ -1,0 +1,26 @@
+.CheckBoxContainer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+  }
+  
+  .CheckBoxInput {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #0075ff;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  
+  .CheckBoxInput:checked {
+    background-color: #0075ff;
+  }
+  
+  .CheckBoxLabel {
+    font-size: 16px;
+    color: #333;
+  }
+  

@@ -4,6 +4,7 @@
   "homepage": "https://th3-rocha.github.io/Bloch-sphere-with-React-Three-Fiber",
   "private": true,
   "dependencies": {
+    "@mediapipe/tasks-vision": "^0.10.10",
     "@react-three/drei": "^9.83.3",
     "@react-three/fiber": "^8.14.1",
     "@testing-library/jest-dom": "^5.17.0",
