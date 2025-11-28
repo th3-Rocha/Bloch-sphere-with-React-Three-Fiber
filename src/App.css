@@ -6,7 +6,15 @@
 .Screen Canvas {
   min-height: 85vh;
 }
+/* App.css */
 
+.StyledButtonGate.active {
+  background-color: #ffd700; /* Amarelo (Gold) */
+  color: black; /* Texto preto para dar leitura no amarelo */
+  border-color: #e6c200;
+  transform: scale(1.05); /* Um leve "pop" para destacar */
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.5); /* Brilho amarelo */
+}
 @media (max-width: 600px) {
   .Screen Canvas {
     min-height: 46vh;
@@ -45,7 +53,7 @@
   display: flex;
   flex-direction: row;
   justify-content: center;
-  align-items: start;
+  align-items: flex-start;
   position: absolute;
   top: 30%;
   left: 85vw;
@@ -152,4 +160,16 @@
 .StyledButtonGate:active {
   transform: translateY(2px);
   box-shadow: 0px 1px 1px rgba(0, 0, 0, 0.1);
+}
+
+.StyledButtonGate.active {
+  background: #ffd700;
+  color: black;
+  border-color: #e6c200;
+  transform: scale(1.05);
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.StyledButtonGate.active:hover {
+  background: #e6c200;
 }
